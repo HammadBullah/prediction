@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'SignIn.dart';
 import 'homepage.dart'; // Make sure you have a HomePage widget
 
 class FadePageRoute<T> extends PageRouteBuilder<T> {
@@ -237,7 +238,7 @@ class _SignUpPageState extends State<SignUpPage> {
         Text('Already have an account?'),
         TextButton(
           onPressed: () {
-            Navigator.of(context).push(FadePageRoute(page: HomePage()));
+            Navigator.of(context).push(FadePageRoute(page: LoginPage()));
           },
           child: Text('Sign In',
             style: TextStyle(color: Colors.green),
