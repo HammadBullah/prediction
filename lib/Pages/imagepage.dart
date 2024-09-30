@@ -5,8 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:prediction/Pages/mappage.dart';
-import 'package:prediction/Pages/settings.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -78,29 +76,6 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
-        break;
-      case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => MapPage()),
-        );
-        break;
-      case 2:
-
-        break;
-      case 3:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => SettingsPage()),
-        );
-        break;
-    }
   }
 
   @override
@@ -126,76 +101,76 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-    body: Stack(
-    children: [
-    Column(
-    children: [
-    _buildImageCard(context), // Space between image card and location cards
-    Expanded(
-    child: ListView(
-    padding: const EdgeInsets.all(16.0),
-    children: [
-    ..._buildLocationCards(), // Display stored location cards
-    ],
-    ),
-    ),
-    ],
-    ),
-    Positioned(
-    top: MediaQuery.of(context).size.height * 0.40,
-    left: 20,
-    right: 20,
-    child: Container(
-    padding: EdgeInsets.symmetric(horizontal: 30),
-    height: 80,
-    decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(30),
-    boxShadow: [
-    BoxShadow(
-    color: Colors.black.withOpacity(0.2),
-    blurRadius: 10,
-    offset: Offset(0, 5),
-    ),
-    ],
-    ),
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-    _buildButtonWithIcon(
-    label: 'Location',
-    icon: Icons.pin_drop_outlined,
-    onPressed: () {
-    _getCurrentLocation();
-    },
-    ),
-    _buildDashedLine(),
-    _buildButtonWithIcon(
-    label: 'Image',
-    icon: Icons.image,
-    onPressed: () {
-    _pickImage();
-    },
-    ),
-    ],
-    ),
-    ),
-    ),
-    ],
-    ),
-    bottomNavigationBar: Container(
-    margin: EdgeInsets.only(left: 16, right: 16, bottom: 20),
-    decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(50),
-    boxShadow: [
-    BoxShadow(
-    color: Colors.black.withOpacity(0.1),
-    blurRadius: 20,
-    blurStyle: BlurStyle.outer,
-    ),
-    ],
-    ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              _buildImageCard(context), // Space between image card and location cards
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16.0),
+                  children: [
+                    ..._buildLocationCards(), // Display stored location cards
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.40,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 30),
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildButtonWithIcon(
+                    label: 'Location',
+                    icon: Icons.pin_drop_outlined,
+                    onPressed: () {
+                      _getCurrentLocation();
+                    },
+                  ),
+                  _buildDashedLine(),
+                  _buildButtonWithIcon(
+                    label: 'Image',
+                    icon: Icons.image,
+                    onPressed: () {
+                      _pickImage();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        margin: EdgeInsets.only(left: 16, right: 16, bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              blurStyle: BlurStyle.outer,
+            ),
+          ],
+        ),
         child: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(

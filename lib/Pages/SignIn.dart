@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'SignUp.dart';
+import 'homepage.dart';
 
 class LoginPage extends StatelessWidget {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,14 +22,14 @@ class LoginPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(height: 20),
-                    _buildSocialLoginButtons(),
+                    _buildSocialLoginButtons(context),
                     SizedBox(height: 20),
                     Text(
                       'Or use email to sign in',
                       style: TextStyle(fontSize: 10, color: Colors.grey[700]),
                     ),
                     SizedBox(height: 20),
-                    _buildLoginForm(),
+                    _buildLoginForm(context),
                     SizedBox(height: 20),
                     _buildFooter(context),
                   ],
@@ -44,10 +49,10 @@ class LoginPage extends StatelessWidget {
       decoration: BoxDecoration(
         image: DecorationImage(
           image: AssetImage('assets/images/agriculture-working-field-harvesting-sunny-day-vector-flat-illustration_939711-1178.png'),
-          fit: BoxFit.cover,  // This will ensure the image covers the entire background
+          fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
-            Colors.black.withOpacity(0.7), // Optional: To darken the image
-            BlendMode.darken,  // Optional: You can adjust this as needed
+            Colors.black.withOpacity(0.7),
+            BlendMode.darken,
           ),
         ),
         borderRadius: BorderRadius.only(
@@ -56,10 +61,10 @@ class LoginPage extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3), // Shadow color
-            spreadRadius: 2, // Spread radius
-            blurRadius: 8, // Blur radius
-            offset: Offset(0, 4), // Offset for shadow
+            color: Colors.black.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -91,11 +96,15 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm(BuildContext context) {
+    TextEditingController emailController = TextEditingController();
+    TextEditingController passwordController = TextEditingController();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
+          controller: emailController,
           decoration: InputDecoration(
             labelText: 'Email',
             border: OutlineInputBorder(
@@ -107,6 +116,7 @@ class LoginPage extends StatelessWidget {
         ),
         SizedBox(height: 16),
         TextField(
+          controller: passwordController,
           obscureText: true,
           decoration: InputDecoration(
             labelText: 'Password',
@@ -118,19 +128,49 @@ class LoginPage extends StatelessWidget {
           ),
         ),
         SizedBox(height: 20),
-        _buildGradientButton(text: 'Sign In', onPressed: () {}),
+        _buildGradientButton(
+          text: 'Sign In',
+          onPressed: () async {
+            try {
+              UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+                email: emailController.text,
+                password: passwordController.text,
+              );
+              // Navigate to the homepage or any other page after successful login
+              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => SignUpPage()));
+            } catch (e) {
+              print(e); // Handle errors accordingly
+            }
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildSocialLoginButtons() {
+  Widget _buildSocialLoginButtons(BuildContext context) {
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () async {
+                  try {
+                    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+                    final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+
+                    final credential = GoogleAuthProvider.credential(
+                      accessToken: googleAuth?.accessToken,
+                      idToken: googleAuth?.idToken,
+                    );
+
+                    UserCredential userCredential = await _auth.signInWithCredential(credential);
+                    // Navigate to the homepage or any other page after successful login
+                    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => HomePage()));
+                  } catch (e) {
+                    print(e); // Handle errors accordingly
+                  }
+                },
                 icon: Icon(Icons.g_mobiledata, color: Colors.black),
                 label: Text(
                   'Sign in with Google',
@@ -163,7 +203,8 @@ class LoginPage extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).push(FadePageRoute(page: SignUpPage()));
           },
-          child: Text('Sign Up',
+          child: Text(
+            'Sign Up',
             style: TextStyle(color: Colors.green),
           ),
         ),
