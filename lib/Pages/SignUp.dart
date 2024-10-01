@@ -238,7 +238,7 @@ class _SignUpPageState extends State<SignUpPage> {
         Text('Already have an account?'),
         TextButton(
           onPressed: () {
-            Navigator.of(context).push(FadePageRoute(page: LoginPage()));
+            Navigator.of(context).push(FadePageRoute(page: HomePage()));
           },
           child: Text('Sign In',
             style: TextStyle(color: Colors.green),

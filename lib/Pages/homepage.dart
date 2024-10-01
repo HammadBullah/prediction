@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -15,24 +14,15 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  final List<File> _images = [];
+  File? _latestImage; // Store the latest captured image
   final ImagePicker _picker = ImagePicker();
-  LatLng? _currentLocation;
+  LatLng? _currentLocation; // Latest location variable
 
-  final List<Widget> _pages = [];
-  final List<LatLng> _locationHistory = []; // List to store location history
-
-  String _locationMessage = "Location not yet fetched";
+  String _locationMessage = "Location not yet fetched"; // Default message
 
   @override
   void initState() {
     super.initState();
-    _pages.addAll([
-      _buildHomePage(),
-      _buildMap(),
-      _buildImagePage(),
-      Center(child: Text('Settings')),
-    ]);
     _getCurrentLocation();
   }
 
@@ -57,8 +47,8 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       _currentLocation = LatLng(position.latitude, position.longitude);
-      _locationMessage = "Current location: ${position.latitude}, ${position.longitude}";
-      _locationHistory.insert(0, _currentLocation!); // Store new location at the top
+      _locationMessage =
+      "Current location: ${position.latitude}, ${position.longitude}";
     });
 
     print(_locationMessage);
@@ -68,8 +58,7 @@ class _HomePageState extends State<HomePage> {
     final pickedFile = await _picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
       setState(() {
-        _images.add(File(pickedFile.path));  // Add captured image to the list
-        _selectedIndex = 2;  // Automatically navigate to the ImagePage after capturing the image
+        _latestImage = File(pickedFile.path); // Store the latest image
       });
     }
   }
@@ -92,7 +81,6 @@ class _HomePageState extends State<HomePage> {
         );
         break;
       case 2:
-
         break;
       case 3:
         Navigator.push(
@@ -126,191 +114,118 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-    body: Stack(
-    children: [
-    Column(
-    children: [
-    _buildImageCard(context), // Space between image card and location cards
-    Expanded(
-    child: ListView(
-    padding: const EdgeInsets.all(16.0),
-    children: [
-    ..._buildLocationCards(), // Display stored location cards
-    ],
-    ),
-    ),
-    ],
-    ),
-    Positioned(
-    top: MediaQuery.of(context).size.height * 0.40,
-    left: 20,
-    right: 20,
-    child: Container(
-    padding: EdgeInsets.symmetric(horizontal: 30),
-    height: 80,
-    decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(30),
-    boxShadow: [
-    BoxShadow(
-    color: Colors.black.withOpacity(0.2),
-    blurRadius: 10,
-    offset: Offset(0, 5),
-    ),
-    ],
-    ),
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-    _buildButtonWithIcon(
-    label: 'Location',
-    icon: Icons.pin_drop_outlined,
-    onPressed: () {
-    _getCurrentLocation();
-    },
-    ),
-    _buildDashedLine(),
-    _buildButtonWithIcon(
-    label: 'Image',
-    icon: Icons.image,
-    onPressed: () {
-    _pickImage();
-    },
-    ),
-    ],
-    ),
-    ),
-    ),
-    ],
-    ),
-    bottomNavigationBar: Container(
-    margin: EdgeInsets.only(left: 16, right: 16, bottom: 20),
-    decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(50),
-    boxShadow: [
-    BoxShadow(
-    color: Colors.black.withOpacity(0.1),
-    blurRadius: 20,
-    blurStyle: BlurStyle.outer,
-    ),
-    ],
-    ),
-        child: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.map_outlined),
-              label: 'Map',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.image),
-              label: 'Images',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_applications),
-              label: 'Settings',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          unselectedItemColor: Colors.grey,
-          selectedItemColor: Colors.green,
-          showUnselectedLabels: true,
-          type: BottomNavigationBarType.fixed,
-          iconSize: 30,
-          selectedIconTheme: IconThemeData(
-            size: 40,
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              _buildImageCard(context), // Display the latest image and location
+              SizedBox(height: 30),
+              if (_latestImage != null) _displayLatestImage(), // Display latest captured image
+              _displayLocation(), // Display current location text
+              _buildRetoctButton(), // Add your round button here
+            ],
           ),
-          onTap: _onItemTapped, // Use this function to update the selected index
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedLabelStyle: GoogleFonts.montserrat(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.40,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 30),
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildButtonWithIcon(
+                    label: 'Location',
+                    icon: Icons.pin_drop_outlined,
+                    onPressed: () {
+                      _getCurrentLocation();
+                    },
+                  ),
+                  _buildDashedLine(),
+                  _buildButtonWithIcon(
+                    label: 'Image',
+                    icon: Icons.image,
+                    onPressed: () {
+                      _pickImage();
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
-          unselectedLabelStyle: GoogleFonts.montserrat(
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      margin: EdgeInsets.only(left: 16, right: 16, bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(50),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            blurStyle: BlurStyle.outer,
           ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map_outlined),
+            label: 'Map',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.image),
+            label: 'Images',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_applications),
+            label: 'Settings',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        unselectedItemColor: Colors.grey,
+        selectedItemColor: Colors.green,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        iconSize: 30,
+        selectedIconTheme: IconThemeData(
+          size: 40,
+        ),
+        onTap: _onItemTapped,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedLabelStyle: GoogleFonts.montserrat(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        unselectedLabelStyle: GoogleFonts.montserrat(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
         ),
       ),
     );
-  }
-
-  Widget _buildHomePage() {
-    return Center(child: Text('Welcome to the Home Page!'));
-  }
-
-  Widget _buildMap() {
-    return GoogleMap(
-      initialCameraPosition: CameraPosition(
-        target: _currentLocation ?? LatLng(37.7749, -122.4194),
-        zoom: 10,
-      ),
-      markers: _currentLocation != null
-          ? {Marker(markerId: MarkerId('currentLocation'), position: _currentLocation!)}
-          : {},
-      onMapCreated: (GoogleMapController controller) {
-        // Additional map setup
-      },
-    );
-  }
-
-  Widget _buildImagePage() {
-    return Column(
-      children: [
-        Expanded(child: _buildImageGrid()),
-      ],
-    );
-  }
-
-  Widget _buildImageGrid() {
-    return _images.isEmpty
-        ? Center(child: Text('No images captured yet'))
-        : GridView.builder(
-      padding: const EdgeInsets.all(16.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-      ),
-      itemCount: _images.length,
-      itemBuilder: (context, index) {
-        return Card(
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.file(
-              _images[index],
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-
-  List<Widget> _buildLocationCards() {
-    return _locationHistory.map((location) {
-      return Card(
-        elevation: 4,
-        margin: EdgeInsets.symmetric(vertical: 5),
-        child: ListTile(
-          title: Text(
-            'Location: ${location.latitude}, ${location.longitude}',
-            style: TextStyle(fontSize: 16),
-          ),
-          trailing: Icon(Icons.location_on, color: Colors.green),
-        ),
-      );
-    }).toList();
   }
 
   Widget _buildButtonWithIcon({
@@ -350,58 +265,84 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Widget to display the current location
+  Widget _displayLocation() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text(
+        _locationMessage, // Dynamic location message
+        style: GoogleFonts.montserrat(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: Colors.black,
+        ),
+      ),
+    );
+  }
+
+  // Widget to display the latest captured image
+  Widget _displayLatestImage() {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      margin: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        image: DecorationImage(
+          image: FileImage(_latestImage!),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
 
   Widget _buildImageCard(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.5, // 50% of the screen height
-      width: MediaQuery.of(context).size.width, // Full width
-      child: Stack(
-        children: [
-          // Background image
-          Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/agriculture-tractor-harvester-working-field-harvesting-sunny-day-vector-flat-illustration_939711-546.png'), // Replace with your image asset
-                fit: BoxFit.cover,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(50),
-                bottomRight: Radius.circular(50),
-              ),
-            ),
+      height: MediaQuery.of(context).size.height * 0.45,
+      width: MediaQuery.of(context).size.width,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(
+              'assets/images/agriculture-tractor-harvester-working-field-harvesting-sunny-day-vector-flat-illustration_939711-546.png'), // Your image asset
+          fit: BoxFit.cover,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(50),
+          bottomRight: Radius.circular(50),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRetoctButton() {
+    return ElevatedButton(
+      onPressed: (){
+
+      },
+      style: ElevatedButton.styleFrom(
+        padding: EdgeInsets.zero,
+        minimumSize: Size(40, 80),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(50),
+        ),
+      ),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.green, Colors.lightGreen],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-          // Text overlay
-          Positioned(
-            top: 100,
-            left: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hello, Name',
-                  style: GoogleFonts.montserrat(
-                    textStyle: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Here is the information related to your land',
-                  style: GoogleFonts.montserrat(
-                    textStyle: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: double.infinity, minHeight: 80),
+          alignment: Alignment.center,
+          child: Text(
+            'Predict',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -127,9 +127,14 @@ class _MapPageState extends State<MapPage> {
         children: [
           Column(
             children: [
-              _buildImageCard(context), // Keep the image card at the top
+              _buildImageCard(context),
               Expanded(
-                child: _buildMap(), // Replace settings page with map
+                child: ListView(
+                  padding: const EdgeInsets.all(16.0),
+                  children: [
+                    ..._buildLocationCards(), // Display stored location cards
+                  ],
+                ),
               ),
             ],
           ),
@@ -232,23 +237,20 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _buildMap() {
-    return GoogleMap(
-      initialCameraPosition: CameraPosition(
-        target: _currentLocation ?? LatLng(20.5937, 78.9629), // Default to India
-        zoom: 14.0,
-      ),
-      myLocationEnabled: true,
-      onMapCreated: (GoogleMapController controller) {
-        _mapController = controller;
-      },
-      markers: _locationHistory.map((location) {
-        return Marker(
-          markerId: MarkerId(location.toString()),
-          position: location,
-        );
-      }).toSet(),
-    );
+  List<Widget> _buildLocationCards() {
+    return _locationHistory.map((location) {
+      return Card(
+        elevation: 4,
+        margin: EdgeInsets.symmetric(vertical: 5),
+        child: ListTile(
+          title: Text(
+            'Location: ${location.latitude}, ${location.longitude}',
+            style: TextStyle(fontSize: 16),
+          ),
+          trailing: Icon(Icons.location_on, color: Colors.green),
+        ),
+      );
+    }).toList();
   }
 
   Widget _buildButtonWithIcon({

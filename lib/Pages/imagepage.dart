@@ -106,6 +106,7 @@ class _HomePageState extends State<HomePage> {
           Column(
             children: [
               _buildImageCard(context), // Space between image card and location cards
+              _buildYearDropdown(),  // Added dropdown for selecting years
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.all(16.0),
