@@ -129,21 +129,23 @@ class LoginPage extends StatelessWidget {
         ),
         SizedBox(height: 20),
         _buildGradientButton(
-          text: 'Sign In',
-          onPressed: () async {
-            try {
-              UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-                email: emailController.text,
-                password: passwordController.text,
-              );
-              // Navigate to the homepage or any other page after successful login
-              Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => SignUpPage()));
-            } catch (e) {
-              print(e); // Handle errors accordingly
-            }
-          },
-        ),
-      ],
+    text: 'Sign In',
+    onPressed: () async {
+    try {
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+    email: emailController.text,
+    password: passwordController.text,
+    );
+    // Navigate to the homepage after successful login
+    Navigator.of(context).pushReplacement(
+    MaterialPageRoute(builder: (context) => HomePage()), // Replace SignUpPage() with HomePage()
+    );
+    } catch (e) {
+    print(e); // Handle errors accordingly
+    }
+    },
+    ),
+    ]
     );
   }
 

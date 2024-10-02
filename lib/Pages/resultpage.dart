@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,6 +10,7 @@ import 'package:prediction/Pages/settings.dart';
 
 import 'homepage.dart';
 import 'mappage.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class ResultPage extends StatefulWidget {
   @override
@@ -19,6 +21,7 @@ class _ResultPageState extends State<ResultPage> {
 
   int _selectedYear = 2024; // Default selected year is 2024
   List<int> _years = List.generate(10, (index) => 2024 + index); // Years starting from 2024 for 10 years
+
 
   File? _latestImage; // Store the latest captured image
   final ImagePicker _picker = ImagePicker();
@@ -71,34 +74,41 @@ class _ResultPageState extends State<ResultPage> {
 
   void _onItemTapped(int index) {
     setState(() {
-      // Handle navigation here
     });
+
+    Widget page;
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+        page = HomePage();
         break;
       case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => MapPage()),
-        );
+        page = MapPage();
         break;
       case 2:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ResultPage()),
-        );
+        page = ResultPage(); // Navigate to the ResultPage
         break;
       case 3:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => SettingsPage()),
-        );
+        page = SettingsPage();
         break;
+      default:
+        page = HomePage();
     }
+
+    // Use PageRouteBuilder for fade transition
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Use FadeTransition for fade effect
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: Duration(milliseconds: 300), // Duration of the fade
+      ),
+    );
   }
 
   @override
@@ -109,10 +119,11 @@ class _ResultPageState extends State<ResultPage> {
         preferredSize: Size.fromHeight(50.0),
         child: AppBar(
           backgroundColor: Colors.transparent,
-          elevation: 0,
+          elevation: 0,automaticallyImplyLeading: false,
+
           flexibleSpace: Center(
             child: Text(
-              'Prediction',
+              'Result',
               style: GoogleFonts.montserrat(
                 textStyle: TextStyle(
                   fontSize: 24,
@@ -126,53 +137,14 @@ class _ResultPageState extends State<ResultPage> {
       ),
       body: Stack(
         children: [
-          Column(
+          SingleChildScrollView(
+            child: Column(
             children: [
               _buildImageCard(context), // Image section
-              SizedBox(height: 30),
               _buildResultContent(), // Result content widget
             ],
-          ),
-          Positioned(
-            top: MediaQuery.of(context).size.height * 0.40,
-            left: 20,
-            right: 20,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 30),
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildButtonWithIcon(
-                    label: 'Location',
-                    icon: Icons.pin_drop_outlined,
-                    onPressed: () {
-                      _getCurrentLocation();
-                    },
-                  ),
-                  _buildDashedLine(),
-                  _buildButtonWithIcon(
-                    label: 'Image',
-                    icon: Icons.image,
-                    onPressed: () {
-                      _pickImage();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
+          ),),
+
         ],
       ),
     bottomNavigationBar: Container(
@@ -196,7 +168,7 @@ class _ResultPageState extends State<ResultPage> {
     ),
     BottomNavigationBarItem(
     icon: Icon(Icons.map_outlined),
-    label: 'Map',
+    label: 'Location',
     ),
     BottomNavigationBarItem(
     icon: Icon(Icons.image),
@@ -329,6 +301,46 @@ class _ResultPageState extends State<ResultPage> {
               ],
             ),
           ),
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.40,
+            left: 20,
+            right: 20,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 30),
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildButtonWithIcon(
+                    label: 'Location',
+                    icon: Icons.pin_drop_outlined,
+                    onPressed: () {
+                      _getCurrentLocation();
+                    },
+                  ),
+                  _buildDashedLine(),
+                  _buildButtonWithIcon(
+                    label: 'Image',
+                    icon: Icons.image,
+                    onPressed: () {
+                      _pickImage();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -336,73 +348,125 @@ class _ResultPageState extends State<ResultPage> {
 
 
   Widget _buildResultContent() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Select Year: ",
-                style: GoogleFonts.montserrat(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
+    return SingleChildScrollView(
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.5, // Define a height
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Select Year: ",
+                    style: GoogleFonts.montserrat(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  DropdownButton<int>(
+                    value: _selectedYear,
+                    icon: Icon(Icons.arrow_drop_down),
+                    iconSize: 24,
+                    elevation: 16,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                    onChanged: (int? newValue) {
+                      setState(() {
+                        _selectedYear = newValue!;
+                      });
+                    },
+                    items: _years.map<DropdownMenuItem<int>>((int year) {
+                      return DropdownMenuItem<int>(
+                        value: year,
+                        child: Text(year.toString()),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
-              SizedBox(width: 10),
-              DropdownButton<int>(
-                value: _selectedYear,
-                icon: Icon(Icons.arrow_drop_down),
-                iconSize: 24,
-                elevation: 16,
-                style: GoogleFonts.montserrat(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-                onChanged: (int? newValue) {
-                  setState(() {
-                    _selectedYear = newValue!;
-                  });
-                },
-                items: _years.map<DropdownMenuItem<int>>((int year) {
-                  return DropdownMenuItem<int>(
-                    value: year,
-                    child: Text(year.toString()),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
+            ),
+            Flexible(
+              child: _buildGraphForYear(_selectedYear),
+            ),
+          ],
         ),
-        // Graph section based on the selected year
-        Expanded(
-          child: _buildGraphForYear(_selectedYear),
-        ),
-      ],
+      ),
     );
   }
 
   // Method to build a mock graph based on the selected year
   Widget _buildGraphForYear(int year) {
+    // Generate random yield data for the graph
+    final List<FlSpot> spots = List.generate(12, (index) {
+      // Each point is represented as (time, yield)
+      return FlSpot(index.toDouble(), Random().nextDouble() * 100); // Random yield between 0 and 100
+    });
+
     return Center(
       child: Container(
         height: 300,
         width: double.infinity,
-        margin: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.all(10.0),
         decoration: BoxDecoration(
           color: Colors.grey[300],
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Center(
-          child: Text(
-            'Graph for Year $year',
-            style: GoogleFonts.montserrat(
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: LineChart(
+            LineChartData(
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    getTitlesWidget: (value, meta) {
+                      // X-axis labels (time)
+                      return Text(
+                        '${value.toInt() + 1}',
+                        style: GoogleFonts.montserrat(fontSize: 12),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      // Y-axis labels (yield)
+                      return Text(
+                        '${value.toInt()}',
+                        style: GoogleFonts.montserrat(fontSize: 12),
+                      );
+                    },
+                  ),
+                ),
+                topTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
+              gridData: FlGridData(show: true), // Display the grid
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: true,
+                  barWidth: 4,
+                  color: Colors.blue,
+                  dotData: FlDotData(show: false), // Hides the dots
+                  belowBarData: BarAreaData(show: true, color: Colors.green.withOpacity(0.3)),
+                ),
+              ],
             ),
           ),
         ),

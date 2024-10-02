@@ -44,6 +44,7 @@ dependencies:
   firebase_core:
   firebase_auth:
   google_sign_in:
+  fl_chart:
 
 
 

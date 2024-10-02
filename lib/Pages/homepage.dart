@@ -68,32 +68,40 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
+
+    Widget page;
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
-        );
+        page = HomePage();
         break;
       case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => MapPage()),
-        );
+        page = MapPage();
         break;
       case 2:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ResultPage()), // Navigate to the ResultPage
-        );
+        page = ResultPage(); // Navigate to the ResultPage
         break;
       case 3:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => SettingsPage()),
-        );
+        page = SettingsPage();
         break;
+      default:
+        page = HomePage();
     }
+
+    // Use PageRouteBuilder for fade transition
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => page,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // Use FadeTransition for fade effect
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: Duration(milliseconds: 300), // Duration of the fade
+      ),
+    );
   }
 
 
@@ -106,6 +114,7 @@ class _HomePageState extends State<HomePage> {
         child: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          automaticallyImplyLeading: false,
           flexibleSpace: Center(
             child: Text(
               'Prediction',

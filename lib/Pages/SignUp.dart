@@ -191,7 +191,9 @@ class _SignUpPageState extends State<SignUpPage> {
           ),
         ),
         SizedBox(height: 16),
-        _buildGradientButton(text: 'Sign Up', onPressed: _signUpWithEmail),
+        _buildGradientButton(text: 'Sign Up', onPressed: () {
+          Navigator.of(context).push(FadePageRoute(page: HomePage()));
+        },),
         if (errorMessage != null) ...[
           SizedBox(height: 10),
           Text(errorMessage!, style: TextStyle(color: Colors.red)),
@@ -238,7 +240,7 @@ class _SignUpPageState extends State<SignUpPage> {
         Text('Already have an account?'),
         TextButton(
           onPressed: () {
-            Navigator.of(context).push(FadePageRoute(page: HomePage()));
+            Navigator.of(context).push(FadePageRoute(page: LoginPage()));
           },
           child: Text('Sign In',
             style: TextStyle(color: Colors.green),
