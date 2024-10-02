@@ -17,7 +17,9 @@ class ResultPage extends StatefulWidget {
 
 class _ResultPageState extends State<ResultPage> {
 
-  int _selectedIndex = 0;
+  int _selectedYear = 2024; // Default selected year is 2024
+  List<int> _years = List.generate(10, (index) => 2024 + index); // Years starting from 2024 for 10 years
+
   File? _latestImage; // Store the latest captured image
   final ImagePicker _picker = ImagePicker();
   LatLng? _currentLocation; // Latest location variable
@@ -334,14 +336,75 @@ class _ResultPageState extends State<ResultPage> {
 
 
   Widget _buildResultContent() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Text(
-        "Results will be displayed here",
-        style: GoogleFonts.montserrat(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: Colors.black,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Select Year: ",
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(width: 10),
+              DropdownButton<int>(
+                value: _selectedYear,
+                icon: Icon(Icons.arrow_drop_down),
+                iconSize: 24,
+                elevation: 16,
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+                onChanged: (int? newValue) {
+                  setState(() {
+                    _selectedYear = newValue!;
+                  });
+                },
+                items: _years.map<DropdownMenuItem<int>>((int year) {
+                  return DropdownMenuItem<int>(
+                    value: year,
+                    child: Text(year.toString()),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+        // Graph section based on the selected year
+        Expanded(
+          child: _buildGraphForYear(_selectedYear),
+        ),
+      ],
+    );
+  }
+
+  // Method to build a mock graph based on the selected year
+  Widget _buildGraphForYear(int year) {
+    return Center(
+      child: Container(
+        height: 300,
+        width: double.infinity,
+        margin: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Center(
+          child: Text(
+            'Graph for Year $year',
+            style: GoogleFonts.montserrat(
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
         ),
       ),
     );
