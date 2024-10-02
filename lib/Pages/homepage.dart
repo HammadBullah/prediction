@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:prediction/Pages/mappage.dart';
+import 'package:prediction/Pages/resultpage.dart';
 import 'package:prediction/Pages/settings.dart';
 
 class HomePage extends StatefulWidget {
@@ -81,6 +82,10 @@ class _HomePageState extends State<HomePage> {
         );
         break;
       case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ResultPage()), // Navigate to the ResultPage
+        );
         break;
       case 3:
         Navigator.push(
@@ -90,6 +95,7 @@ class _HomePageState extends State<HomePage> {
         break;
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +125,7 @@ class _HomePageState extends State<HomePage> {
           Column(
             children: [
               _buildImageCard(context), // Display the latest image and location
-              SizedBox(height: 30),
+
               if (_latestImage != null) _displayLatestImage(), // Display latest captured image
               _displayLocation(), // Display current location text
               _buildRetoctButton(), // Add your round button here
@@ -197,7 +203,7 @@ class _HomePageState extends State<HomePage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.image),
-            label: 'Images',
+            label: 'Result',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_applications),
@@ -268,7 +274,7 @@ class _HomePageState extends State<HomePage> {
   // Widget to display the current location
   Widget _displayLocation() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(5),
       child: Text(
         _locationMessage, // Dynamic location message
         style: GoogleFonts.montserrat(
@@ -285,7 +291,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       height: 200,
       width: double.infinity,
-      margin: const EdgeInsets.all(16.0),
+      margin: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         image: DecorationImage(
@@ -298,22 +304,67 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildImageCard(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.45,
-      width: MediaQuery.of(context).size.width,
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(
-              'assets/images/agriculture-tractor-harvester-working-field-harvesting-sunny-day-vector-flat-illustration_939711-546.png'), // Your image asset
-          fit: BoxFit.cover,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(50),
-          bottomRight: Radius.circular(50),
-        ),
+      height: MediaQuery
+          .of(context)
+          .size
+          .height * 0.5, // 50% of the screen height
+      width: MediaQuery
+          .of(context)
+          .size
+          .width, // Full width
+      child: Stack(
+        children: [
+          // Background image
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(
+                    'assets/images/agriculture-tractor-harvester-working-field-harvesting-sunny-day-vector-flat-illustration_939711-546.png'),
+                // Replace with your image asset
+                fit: BoxFit.cover,
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(50),
+                bottomRight: Radius.circular(50),
+              ),
+            ),
+          ),
+          // Text overlay
+          Positioned(
+            top: 100,
+            left: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hello, Name',
+                  style: GoogleFonts.montserrat(
+                    textStyle: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Here is the information related to your land',
+                  style: GoogleFonts.montserrat(
+                    textStyle: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
-
+}
   Widget _buildRetoctButton() {
     return ElevatedButton(
       onPressed: (){
@@ -346,4 +397,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-}
+

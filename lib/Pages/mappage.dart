@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:prediction/Pages/resultpage.dart';
 import 'package:prediction/Pages/settings.dart';
 
 import 'homepage.dart';
@@ -32,8 +33,6 @@ class _MapPageState extends State<MapPage> {
     setState(() {
       _selectedIndex = index;
     });
-
-    // Navigate to the selected page
     switch (index) {
       case 0:
         Navigator.pushReplacement(
@@ -42,12 +41,19 @@ class _MapPageState extends State<MapPage> {
         );
         break;
       case 1:
-      // Already on Map page, do nothing
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => MapPage()),
+        );
         break;
       case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ResultPage()), // Navigate to the ResultPage
+        );
         break;
       case 3:
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => SettingsPage()),
         );
@@ -205,7 +211,7 @@ class _MapPageState extends State<MapPage> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.image),
-              label: 'Images',
+              label: 'Result',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.settings_applications),
@@ -292,8 +298,14 @@ class _MapPageState extends State<MapPage> {
 
   Widget _buildImageCard(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.5, // 50% of the screen height
-      width: MediaQuery.of(context).size.width, // Full width
+      height: MediaQuery
+          .of(context)
+          .size
+          .height * 0.5, // 50% of the screen height
+      width: MediaQuery
+          .of(context)
+          .size
+          .width, // Full width
       child: Stack(
         children: [
           // Background image
@@ -311,9 +323,41 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
           ),
+          // Text overlay
+          Positioned(
+            top: 100,
+            left: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hello, Name',
+                  style: GoogleFonts.montserrat(
+                    textStyle: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Here is the information related to your land',
+                  style: GoogleFonts.montserrat(
+                    textStyle: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
 

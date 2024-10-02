@@ -4,8 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:prediction/Pages/resultpage.dart';
 
 import 'homepage.dart';
+import 'mappage.dart';
 
 // Dummy classes for other pages (implement these separately)
 
@@ -33,8 +35,6 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       _selectedIndex = index;
     });
-
-    // Navigate to the selected page
     switch (index) {
       case 0:
         Navigator.pushReplacement(
@@ -42,11 +42,23 @@ class _SettingsPageState extends State<SettingsPage> {
           MaterialPageRoute(builder: (context) => HomePage()),
         );
         break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => MapPage()),
+        );
         break;
       case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ResultPage()), // Navigate to the ResultPage
+        );
         break;
       case 3:
-      // Already on Settings page, do nothing
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SettingsPage()),
+        );
         break;
     }
   }
@@ -194,7 +206,7 @@ class _SettingsPageState extends State<SettingsPage> {
     ),
     BottomNavigationBarItem(
     icon: Icon(Icons.image),
-    label: 'Images',
+    label: 'Result',
     ),
     BottomNavigationBarItem(
     icon: Icon(Icons.settings_applications),

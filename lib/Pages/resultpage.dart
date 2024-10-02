@@ -1,36 +1,32 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:prediction/Pages/settings.dart';
 
-class HomePage extends StatefulWidget {
+import 'homepage.dart';
+import 'mappage.dart';
+
+class ResultPage extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  _ResultPageState createState() => _ResultPageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _ResultPageState extends State<ResultPage> {
+
   int _selectedIndex = 0;
-  final List<File> _images = [];
+  File? _latestImage; // Store the latest captured image
   final ImagePicker _picker = ImagePicker();
-  LatLng? _currentLocation;
+  LatLng? _currentLocation; // Latest location variable
 
-  final List<Widget> _pages = [];
-  final List<LatLng> _locationHistory = []; // List to store location history
-
-  String _locationMessage = "Location not yet fetched";
+  String _locationMessage = "Location not yet fetched"; // Default message
 
   @override
   void initState() {
     super.initState();
-    _pages.addAll([
-      _buildHomePage(),
-      _buildMap(),
-      _buildImagePage(),
-      Center(child: Text('Settings')),
-    ]);
     _getCurrentLocation();
   }
 
@@ -55,8 +51,8 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       _currentLocation = LatLng(position.latitude, position.longitude);
-      _locationMessage = "Current location: ${position.latitude}, ${position.longitude}";
-      _locationHistory.insert(0, _currentLocation!); // Store new location at the top
+      _locationMessage =
+      "Current location: ${position.latitude}, ${position.longitude}";
     });
 
     print(_locationMessage);
@@ -66,16 +62,41 @@ class _HomePageState extends State<HomePage> {
     final pickedFile = await _picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
       setState(() {
-        _images.add(File(pickedFile.path));  // Add captured image to the list
-        _selectedIndex = 2;  // Automatically navigate to the ImagePage after capturing the image
+        _latestImage = File(pickedFile.path); // Store the latest image
       });
     }
   }
 
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index;
+      // Handle navigation here
     });
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => MapPage()),
+        );
+        break;
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ResultPage()),
+        );
+        break;
+      case 3:
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SettingsPage()),
+        );
+        break;
+    }
   }
 
   @override
@@ -105,16 +126,9 @@ class _HomePageState extends State<HomePage> {
         children: [
           Column(
             children: [
-              _buildImageCard(context), // Space between image card and location cards
-              _buildYearDropdown(),  // Added dropdown for selecting years
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16.0),
-                  children: [
-                    ..._buildLocationCards(), // Display stored location cards
-                  ],
-                ),
-              ),
+              _buildImageCard(context), // Image section
+              SizedBox(height: 30),
+              _buildResultContent(), // Result content widget
             ],
           ),
           Positioned(
@@ -159,135 +173,64 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        margin: EdgeInsets.only(left: 16, right: 16, bottom: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(50),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              blurStyle: BlurStyle.outer,
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.map_outlined),
-              label: 'Map',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.image),
-              label: 'Images',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_applications),
-              label: 'Settings',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          unselectedItemColor: Colors.grey,
-          selectedItemColor: Colors.green,
-          showUnselectedLabels: true,
-          type: BottomNavigationBarType.fixed,
-          iconSize: 30,
-          selectedIconTheme: IconThemeData(
-            size: 40,
-          ),
-          onTap: _onItemTapped, // Use this function to update the selected index
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedLabelStyle: GoogleFonts.montserrat(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-          unselectedLabelStyle: GoogleFonts.montserrat(
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHomePage() {
-    return Center(child: Text('Welcome to the Home Page!'));
-  }
-
-  Widget _buildMap() {
-    return GoogleMap(
-      initialCameraPosition: CameraPosition(
-        target: _currentLocation ?? LatLng(37.7749, -122.4194),
-        zoom: 10,
-      ),
-      markers: _currentLocation != null
-          ? {Marker(markerId: MarkerId('currentLocation'), position: _currentLocation!)}
-          : {},
-      onMapCreated: (GoogleMapController controller) {
-        // Additional map setup
-      },
-    );
-  }
-
-  Widget _buildImagePage() {
-    return Column(
-      children: [
-        Expanded(child: _buildImageGrid()),
-      ],
-    );
-  }
-
-  Widget _buildImageGrid() {
-    return _images.isEmpty
-        ? Center(child: Text('No images captured yet'))
-        : GridView.builder(
-      padding: const EdgeInsets.all(16.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-      ),
-      itemCount: _images.length,
-      itemBuilder: (context, index) {
-        return Card(
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.file(
-              _images[index],
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      },
+    bottomNavigationBar: Container(
+    margin: EdgeInsets.only(left: 16, right: 16, bottom: 20),
+    decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(50),
+    boxShadow: [
+    BoxShadow(
+    color: Colors.black.withOpacity(0.1),
+    blurRadius: 20,
+    blurStyle: BlurStyle.outer,
+    ),
+    ],
+    ),
+    child: BottomNavigationBar(
+    items: const <BottomNavigationBarItem>[
+    BottomNavigationBarItem(
+    icon: Icon(Icons.home),
+    label: 'Home',
+    ),
+    BottomNavigationBarItem(
+    icon: Icon(Icons.map_outlined),
+    label: 'Map',
+    ),
+    BottomNavigationBarItem(
+    icon: Icon(Icons.image),
+    label: 'Result',
+    ),
+    BottomNavigationBarItem(
+    icon: Icon(Icons.settings_applications),
+    label: 'Settings',
+    ),
+    ],
+    currentIndex:2,
+    unselectedItemColor: Colors.grey,
+    selectedItemColor: Colors.green,
+    showUnselectedLabels: true,
+    type: BottomNavigationBarType.fixed,
+    iconSize: 30,
+    selectedIconTheme: IconThemeData(
+    size: 40,
+    ),
+    onTap: _onItemTapped, // Use this function to update the selected index
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    selectedLabelStyle: GoogleFonts.montserrat(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    ),
+    unselectedLabelStyle: GoogleFonts.montserrat(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    ),
+    ),
+    ),
     );
   }
 
 
-  List<Widget> _buildLocationCards() {
-    return _locationHistory.map((location) {
-      return Card(
-        elevation: 4,
-        margin: EdgeInsets.symmetric(vertical: 5),
-        child: ListTile(
-          title: Text(
-            'Location: ${location.latitude}, ${location.longitude}',
-            style: TextStyle(fontSize: 16),
-          ),
-          trailing: Icon(Icons.location_on, color: Colors.green),
-        ),
-      );
-    }).toList();
-  }
 
   Widget _buildButtonWithIcon({
     required String label,
@@ -326,18 +269,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   Widget _buildImageCard(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.5, // 50% of the screen height
-      width: MediaQuery.of(context).size.width, // Full width
+      height: MediaQuery
+          .of(context)
+          .size
+          .height * 0.5, // 50% of the screen height
+      width: MediaQuery
+          .of(context)
+          .size
+          .width, // Full width
       child: Stack(
         children: [
           // Background image
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/images/agriculture-tractor-harvester-working-field-harvesting-sunny-day-vector-flat-illustration_939711-546.png'), // Replace with your image asset
+                image: AssetImage(
+                    'assets/images/agriculture-tractor-harvester-working-field-harvesting-sunny-day-vector-flat-illustration_939711-546.png'),
+                // Replace with your image asset
                 fit: BoxFit.cover,
               ),
               borderRadius: BorderRadius.only(
@@ -378,6 +328,21 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+
+  Widget _buildResultContent() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text(
+        "Results will be displayed here",
+        style: GoogleFonts.montserrat(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: Colors.black,
+        ),
       ),
     );
   }
