@@ -407,10 +407,19 @@ Widget _buildUpload(BuildContext context) {
             // Send the request
             var response = await request.send();
 
+            // Handle the server response
             if (response.statusCode == 200) {
+              // Convert the response stream to a String
+              String responseBody = await response.stream.bytesToString();
+
+              // Display the response in a snackbar or dialog
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("File uploaded successfully!")),
+                SnackBar(content: Text("Response: $responseBody")),
               );
+
+              // You can also parse the response if it is in JSON format
+              // Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
+              // Process jsonResponse as needed
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("Failed to upload file. Status: ${response.statusCode}")),
@@ -456,6 +465,7 @@ Widget _buildUpload(BuildContext context) {
     ),
   );
 }
+
 
   Widget _buildRetoctButton(BuildContext context) {
     return Padding(
