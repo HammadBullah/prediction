@@ -7,6 +7,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:prediction/Pages/mappage.dart';
 import 'package:prediction/Pages/resultpage.dart';
 import 'package:prediction/Pages/settings.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
+
 
 class HomePage extends StatefulWidget {
   @override
@@ -136,8 +139,11 @@ class _HomePageState extends State<HomePage> {
               _buildImageCard(context), // Display the latest image and location
 
               if (_latestImage != null) _displayLatestImage(), // Display latest captured image
-              _displayLocation(), // Display current location text
-              _buildRetoctButton(), // Add your round button here
+              _displayLocation(),
+              SizedBox(height: 10,),
+              _buildUpload(context),
+              SizedBox(height: 20,),// Display current location text
+              _buildRetoctButton(context), // Add your round button here
             ],
           ),
           Positioned(
@@ -374,10 +380,102 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-  Widget _buildRetoctButton() {
-    return ElevatedButton(
-      onPressed: (){
 
+Widget _buildUpload(BuildContext context) {
+  return Padding(
+    padding: EdgeInsets.all(20),
+    child: ElevatedButton(
+      onPressed: () async {
+        // File selection logic
+        FilePickerResult? result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['xlsx', 'xls'], // Allow Excel files
+        );
+
+        if (result != null) {
+          File file = File(result.files.single.path!); // Get the selected file
+          String apiUrl = "https://2f88-2401-4900-a01d-af35-14e-dd82-2454-98c1.ngrok-free.app/predict"; // Replace with your API endpoint
+
+          try {
+            // Create multipart request
+            var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
+            request.files.add(await http.MultipartFile.fromPath(
+              'file', // The field name expected by the server
+              file.path,
+            ));
+
+            // Send the request
+            var response = await request.send();
+
+            if (response.statusCode == 200) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("File uploaded successfully!")),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Failed to upload file. Status: ${response.statusCode}")),
+              );
+            }
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Error uploading file: $e")),
+            );
+          }
+        } else {
+          // User canceled file selection
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("No file selected")),
+          );
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        padding: EdgeInsets.zero,
+        minimumSize: Size(40, 80),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(50),
+        ),
+      ),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blueGrey, Colors.grey],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: double.infinity, minHeight: 80),
+          alignment: Alignment.center,
+          child: Text(
+            'Upload Excel',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+  Widget _buildRetoctButton(BuildContext context) {
+    return Padding(
+        padding: EdgeInsets.all(20),
+        child: ElevatedButton(
+      onPressed: () {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => ResultPage(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              // Use FadeTransition for fade effect
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: Duration(milliseconds: 300), // Duration of the fade
+          ),
+        );
       },
       style: ElevatedButton.styleFrom(
         padding: EdgeInsets.zero,
@@ -404,6 +502,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-    );
-  }
+    )
+  );
+}
 
