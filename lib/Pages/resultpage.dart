@@ -74,7 +74,7 @@ class _ResultPageState extends State<ResultPage> {
         if (year == selectedYear) {
           // Scale the predicted yield to 20%
           double predictedYield = data[i]['Predicted Yield'].toDouble();
-          double scaledYield = predictedYield * 0.5;
+          double scaledYield = predictedYield * 0.7;
 
           barChartGroups.add(
             BarChartGroupData(
