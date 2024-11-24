@@ -1,126 +1,117 @@
-import 'dart:io';
-import 'dart:math';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:prediction/Pages/settings.dart';
-
+import 'package:provider/provider.dart';
+import '../response.dart';
 import 'homepage.dart';
 import 'mappage.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 class ResultPage extends StatefulWidget {
+  final String responseData; // Add a parameter for the response data
+
+  ResultPage({required this.responseData}); // Constructor
+
   @override
   _ResultPageState createState() => _ResultPageState();
 }
 
 class _ResultPageState extends State<ResultPage> {
-
-  int _selectedYear = 2024; // Default selected year is 2024
-  List<int> _years = List.generate(10, (index) => 2024 + index); // Years starting from 2024 for 10 years
-
-
-  File? _latestImage; // Store the latest captured image
-  final ImagePicker _picker = ImagePicker();
-  LatLng? _currentLocation; // Latest location variable
-
-  String _locationMessage = "Location not yet fetched"; // Default message
+  String responseData = '';
+  int _selectedIndex = 2;
+  String selectedYear = ''; // For holding the selected year
+  List<dynamic> years = []; // For holding available years from the response
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
-  }
-
-  void _getCurrentLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      print("Location services are disabled.");
-      return Future.error('Location services are disabled.');
-    }
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        print("Location permissions are denied.");
-        return Future.error('Location permissions are denied.');
-      }
-    }
-
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-
-    setState(() {
-      _currentLocation = LatLng(position.latitude, position.longitude);
-      _locationMessage =
-      "Current location: ${position.latitude}, ${position.longitude}";
-    });
-
-    print(_locationMessage);
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
-    if (pickedFile != null) {
+    _extractYears();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        _latestImage = File(pickedFile.path); // Store the latest image
+        responseData = Provider.of<ResponseDataModel>(context, listen: false).responseData;
       });
-    }
+    });
+  }
+
+  // Extract available years from response data
+  void _extractYears() {
+    final List<dynamic> data = jsonDecode(widget.responseData);
+    setState(() {
+      years = data.map((e) => e['Actual Yield'].toString()).toList();
+      selectedYear = years.isNotEmpty ? years[0] : ''; // Set default year to the first one
+    });
   }
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return;
+
     setState(() {
+      _selectedIndex = index;
     });
 
-    Widget page;
-    switch (index) {
-      case 0:
-        page = HomePage();
-        break;
-      case 1:
-        page = MapPage();
-        break;
-      case 2:
-        page = ResultPage(); // Navigate to the ResultPage
-        break;
-      case 3:
-        page = SettingsPage();
-        break;
-      default:
-        page = HomePage();
-    }
-
-    // Use PageRouteBuilder for fade transition
+    final pages = [HomePage(), MapPage(), ResultPage(responseData: responseData), SettingsPage()];
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // Use FadeTransition for fade effect
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+        pageBuilder: (_, __, ___) => pages[index],
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
         },
-        transitionDuration: Duration(milliseconds: 300), // Duration of the fade
       ),
     );
   }
 
+  // Filter the data based on selected year
+  List<BarChartGroupData> _getBarChartData() {
+    try {
+      final List<dynamic> data = jsonDecode(widget.responseData);
+      List<BarChartGroupData> barChartGroups = [];
+      int index = 0;
+
+      for (int i = 0; i < data.length; i++) {
+        String year = data[i]['Actual Yield'].toString();
+        if (year == selectedYear) {
+          // Scale the predicted yield to 20%
+          double predictedYield = data[i]['Predicted Yield'].toDouble();
+          double scaledYield = predictedYield * 0.5;
+
+          barChartGroups.add(
+            BarChartGroupData(
+              x: index,
+              barRods: [
+                BarChartRodData(
+                  fromY: 0,
+                  toY: scaledYield,
+                  color: Colors.green,
+                  width: 20,
+                  borderRadius: BorderRadius.zero,
+                ),
+              ],
+            ),
+          );
+          index++;
+        }
+      }
+
+      return barChartGroups;
+    } catch (e) {
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    bool hasData = widget.responseData.isNotEmpty;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(50.0),
         child: AppBar(
           backgroundColor: Colors.transparent,
-          elevation: 0,automaticallyImplyLeading: false,
-
+          elevation: 0,
+          automaticallyImplyLeading: false,
           flexibleSpace: Center(
             child: Text(
               'Result',
@@ -135,74 +126,169 @@ class _ResultPageState extends State<ResultPage> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Column(
-            children: [
-              _buildImageCard(context), // Image section
-              _buildResultContent(), // Result content widget
-            ],
-          ),),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildImageCard(context),
+            SizedBox(height: 20),
+            Text(
+              "Predictions vs Actual",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            hasData
+                ? Column(
+              children: [
+                DropdownButton<String>(
+                  value: selectedYear.isNotEmpty ? selectedYear : null,
+                  hint: Text('Select Year'),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedYear = newValue!;
+                    });
+                  },
+                  items: years.map<DropdownMenuItem<String>>((dynamic year) {
+                    return DropdownMenuItem<String>(
+                      value: year.toString(),
+                      child: Text(year.toString()),
+                    );
+                  }).toList(),
+                ),
+                SizedBox(height: 20),
+                // Scrollable bar chart container
+                Container(
+                  height: 400, // Fixed height for the container
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width * 1.5, // Adjust width for horizontal scrolling
+                      child: BarChart(
+                        BarChartData(
+                          gridData: FlGridData(show: true),
+                          titlesData: FlTitlesData(
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Text(
+                                      'Group ${(value.toInt() + 1)}',
+                                      style: TextStyle(fontSize: 10, color: Colors.black),
+                                    ),
+                                  );
+                                },
+                                reservedSize: 30,
+                              ),
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                                getTitlesWidget: (value, meta) {
+                                  // Define y-axis labels
+                                  if (value % 500 == 0) {
+                                    return Text(
+                                      value.toInt().toString(),
+                                      style: TextStyle(fontSize: 10, color: Colors.black),
+                                    );
+                                  }
+                                  return Container(); // No label for other points
+                                },
+                              ),
+                            ),
+                            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          ),
+                          borderData: FlBorderData(
+                            show: true,
+                            border: Border.all(color: Colors.black),
+                          ),
+                          barGroups: _getBarChartData(),
+                          barTouchData: BarTouchData(
+                            touchTooltipData: BarTouchTooltipData(
+                              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                double predictedYield = jsonDecode(widget.responseData)[groupIndex]['Predicted Yield'].toDouble();
+                                return BarTooltipItem(
+                                  'Predicted Yield: ${predictedYield.toString()}',
+                                  TextStyle(color: Colors.green),
+                                );
+                              },
+                            ),
+                          ),
+                          maxY: 2500, // Maximum value for the y-axis
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
 
-        ],
+              ],
+            )
+                : Container(),
+          ],
+        ),
       ),
-    bottomNavigationBar: Container(
-    margin: EdgeInsets.only(left: 16, right: 16, bottom: 20),
-    decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(50),
-    boxShadow: [
-    BoxShadow(
-    color: Colors.black.withOpacity(0.1),
-    blurRadius: 20,
-    blurStyle: BlurStyle.outer,
-    ),
-    ],
-    ),
-    child: BottomNavigationBar(
-    items: const <BottomNavigationBarItem>[
-    BottomNavigationBarItem(
-    icon: Icon(Icons.home),
-    label: 'Home',
-    ),
-    BottomNavigationBarItem(
-    icon: Icon(Icons.map_outlined),
-    label: 'Location',
-    ),
-    BottomNavigationBarItem(
-    icon: Icon(Icons.image),
-    label: 'Result',
-    ),
-    BottomNavigationBarItem(
-    icon: Icon(Icons.settings_applications),
-    label: 'Settings',
-    ),
-    ],
-    currentIndex:2,
-    unselectedItemColor: Colors.grey,
-    selectedItemColor: Colors.green,
-    showUnselectedLabels: true,
-    type: BottomNavigationBarType.fixed,
-    iconSize: 30,
-    selectedIconTheme: IconThemeData(
-    size: 40,
-    ),
-    onTap: _onItemTapped, // Use this function to update the selected index
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    selectedLabelStyle: GoogleFonts.montserrat(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    ),
-    unselectedLabelStyle: GoogleFonts.montserrat(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    ),
-    ),
-    ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
+        Widget _buildBottomNavigationBar() {
+      return Container(
+        margin: EdgeInsets.only(left: 16, right: 16, bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(50),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              blurStyle: BlurStyle.outer,
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.map_outlined),
+              label: 'Map',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.image),
+              label: 'Result',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings_applications),
+              label: 'Settings',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          unselectedItemColor: Colors.grey,
+          selectedItemColor: Colors.green,
+          showUnselectedLabels: true,
+          type: BottomNavigationBarType.fixed,
+          iconSize: 30,
+          selectedIconTheme: IconThemeData(
+            size: 40,
+          ),
+          onTap: _onItemTapped,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedLabelStyle: GoogleFonts.montserrat(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+          unselectedLabelStyle: GoogleFonts.montserrat(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      );
+    }
 
 
 
@@ -326,7 +412,7 @@ class _ResultPageState extends State<ResultPage> {
                     label: 'Location',
                     icon: Icons.pin_drop_outlined,
                     onPressed: () {
-                      _getCurrentLocation();
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => MapPage()), );
                     },
                   ),
                   _buildDashedLine(),
@@ -334,7 +420,6 @@ class _ResultPageState extends State<ResultPage> {
                     label: 'Image',
                     icon: Icons.image,
                     onPressed: () {
-                      _pickImage();
                     },
                   ),
                 ],
@@ -342,134 +427,6 @@ class _ResultPageState extends State<ResultPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-
-  Widget _buildResultContent() {
-    return SingleChildScrollView(
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.5, // Define a height
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Select Year: ",
-                    style: GoogleFonts.montserrat(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  DropdownButton<int>(
-                    value: _selectedYear,
-                    icon: Icon(Icons.arrow_drop_down),
-                    iconSize: 24,
-                    elevation: 16,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                    onChanged: (int? newValue) {
-                      setState(() {
-                        _selectedYear = newValue!;
-                      });
-                    },
-                    items: _years.map<DropdownMenuItem<int>>((int year) {
-                      return DropdownMenuItem<int>(
-                        value: year,
-                        child: Text(year.toString()),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            Flexible(
-              child: _buildGraphForYear(_selectedYear),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Method to build a mock graph based on the selected year
-  Widget _buildGraphForYear(int year) {
-    // Generate random yield data for the graph
-    final List<FlSpot> spots = List.generate(12, (index) {
-      // Each point is represented as (time, yield)
-      return FlSpot(index.toDouble(), Random().nextDouble() * 100); // Random yield between 0 and 100
-    });
-
-    return Center(
-      child: Container(
-        height: 300,
-        width: double.infinity,
-        margin: const EdgeInsets.all(10.0),
-        decoration: BoxDecoration(
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: LineChart(
-            LineChartData(
-              titlesData: FlTitlesData(
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 30,
-                    getTitlesWidget: (value, meta) {
-                      // X-axis labels (time)
-                      return Text(
-                        '${value.toInt() + 1}',
-                        style: GoogleFonts.montserrat(fontSize: 12),
-                      );
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    getTitlesWidget: (value, meta) {
-                      // Y-axis labels (yield)
-                      return Text(
-                        '${value.toInt()}',
-                        style: GoogleFonts.montserrat(fontSize: 12),
-                      );
-                    },
-                  ),
-                ),
-                topTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              gridData: FlGridData(show: true), // Display the grid
-              lineBarsData: [
-                LineChartBarData(
-                  spots: spots,
-                  isCurved: true,
-                  barWidth: 4,
-                  color: Colors.blue,
-                  dotData: FlDotData(show: false), // Hides the dots
-                  belowBarData: BarAreaData(show: true, color: Colors.green.withOpacity(0.3)),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

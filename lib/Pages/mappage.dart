@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:prediction/Pages/resultpage.dart';
 import 'package:prediction/Pages/settings.dart';
+import 'package:provider/provider.dart';
 
+import '../response.dart';
 import 'homepage.dart';
 
 class MapPage extends StatefulWidget {
@@ -15,6 +17,8 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
+  String responseData = '';
+
   final ImagePicker _picker = ImagePicker();
   LatLng? _currentLocation;
   final List<LatLng> _locationHistory = []; // List to store location history
@@ -27,44 +31,29 @@ class _MapPageState extends State<MapPage> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Access the Provider data after the widget is built
+      setState(() {
+        responseData = Provider.of<ResponseDataModel>(context, listen: false).responseData;
+      });
+    });
   }
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return; // Prevent redundant navigation.
+
     setState(() {
       _selectedIndex = index;
     });
 
-    Widget page;
-    switch (index) {
-      case 0:
-        page = HomePage();
-        break;
-      case 1:
-        page = MapPage();
-        break;
-      case 2:
-        page = ResultPage(); // Navigate to the ResultPage
-        break;
-      case 3:
-        page = SettingsPage();
-        break;
-      default:
-        page = HomePage();
-    }
-
-    // Use PageRouteBuilder for fade transition
+    final pages = [HomePage(),MapPage(), ResultPage(responseData: responseData), SettingsPage()];
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // Use FadeTransition for fade effect
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+        pageBuilder: (_, __, ___) => pages[index],
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
         },
-        transitionDuration: Duration(milliseconds: 300), // Duration of the fade
       ),
     );
   }

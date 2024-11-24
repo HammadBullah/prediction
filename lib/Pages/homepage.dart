@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +10,10 @@ import 'package:prediction/Pages/resultpage.dart';
 import 'package:prediction/Pages/settings.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+
+import '../response.dart';
+
 
 
 class HomePage extends StatefulWidget {
@@ -17,6 +22,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  String responseData = '';
   int _selectedIndex = 0;
   File? _latestImage; // Store the latest captured image
   final ImagePicker _picker = ImagePicker();
@@ -28,7 +34,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Access the Provider data after the widget is built
+      setState(() {
+        responseData = Provider.of<ResponseDataModel>(context, listen: false).responseData;
+      });
+    });
   }
+
 
   void _getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -49,6 +62,8 @@ class _HomePageState extends State<HomePage> {
     Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high);
 
+    if (!mounted) return;  // Check if the widget is still in the widget tree
+
     setState(() {
       _currentLocation = LatLng(position.latitude, position.longitude);
       _locationMessage =
@@ -57,6 +72,7 @@ class _HomePageState extends State<HomePage> {
 
     print(_locationMessage);
   }
+
 
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.camera);
@@ -68,41 +84,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return; // Prevent redundant navigation.
+
     setState(() {
       _selectedIndex = index;
     });
 
-    Widget page;
-    switch (index) {
-      case 0:
-        page = HomePage();
-        break;
-      case 1:
-        page = MapPage();
-        break;
-      case 2:
-        page = ResultPage(); // Navigate to the ResultPage
-        break;
-      case 3:
-        page = SettingsPage();
-        break;
-      default:
-        page = HomePage();
-    }
-
-    // Use PageRouteBuilder for fade transition
+    final pages = [HomePage(), MapPage(), ResultPage(responseData: responseData), SettingsPage()];
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          // Use FadeTransition for fade effect
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+        pageBuilder: (_, __, ___) => pages[index],
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
         },
-        transitionDuration: Duration(milliseconds: 300), // Duration of the fade
       ),
     );
   }
@@ -110,6 +105,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
@@ -120,11 +117,11 @@ class _HomePageState extends State<HomePage> {
           automaticallyImplyLeading: false,
           flexibleSpace: Center(
             child: Text(
-              'Prediction',
+              'AgroVision',
               style: GoogleFonts.montserrat(
                 textStyle: TextStyle(
                   fontSize: 24,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w800,
                   color: Colors.black,
                 ),
               ),
@@ -137,13 +134,11 @@ class _HomePageState extends State<HomePage> {
           Column(
             children: [
               _buildImageCard(context), // Display the latest image and location
+              if (_latestImage != null)
+                _displayLatestImage(_latestImage!),
+              _displayLocation(_locationMessage),
+              SizedBox(height: 10),
 
-              if (_latestImage != null) _displayLatestImage(), // Display latest captured image
-              _displayLocation(),
-              SizedBox(height: 10,),
-              _buildUpload(context),
-              SizedBox(height: 20,),// Display current location text
-              _buildRetoctButton(context), // Add your round button here
             ],
           ),
           Positioned(
@@ -186,6 +181,13 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+          Positioned(
+              top: MediaQuery.of(context).size.height * 0.75,
+              left: 20,
+              right: 20,
+              child: Center(
+            child: _buildUpload(context),
+          ))
         ],
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
@@ -287,36 +289,32 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Widget to display the current location
-  Widget _displayLocation() {
+  Widget _displayLocation(String locationMessage) {
     return Padding(
       padding: const EdgeInsets.all(5),
       child: Text(
-        _locationMessage, // Dynamic location message
-        style: GoogleFonts.montserrat(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: Colors.black,
-        ),
+        locationMessage,
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black),
       ),
     );
   }
 
+
   // Widget to display the latest captured image
-  Widget _displayLatestImage() {
+  Widget _displayLatestImage(File image) {
     return Container(
       height: 200,
       width: double.infinity,
-      margin: const EdgeInsets.all(10),
+      margin: EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         image: DecorationImage(
-          image: FileImage(_latestImage!),
+          image: FileImage(image),
           fit: BoxFit.cover,
         ),
       ),
     );
   }
-
   Widget _buildImageCard(BuildContext context) {
     return Container(
       height: MediaQuery
@@ -386,7 +384,6 @@ Widget _buildUpload(BuildContext context) {
     padding: EdgeInsets.all(20),
     child: ElevatedButton(
       onPressed: () async {
-        // File selection logic
         FilePickerResult? result = await FilePicker.platform.pickFiles(
           type: FileType.custom,
           allowedExtensions: ['xlsx', 'xls'], // Allow Excel files
@@ -394,32 +391,32 @@ Widget _buildUpload(BuildContext context) {
 
         if (result != null) {
           File file = File(result.files.single.path!); // Get the selected file
-          String apiUrl = "https://2f88-2401-4900-a01d-af35-14e-dd82-2454-98c1.ngrok-free.app/predict"; // Replace with your API endpoint
+          String apiUrl = "https://71b2-2401-4900-81e8-eaa1-54af-2994-d5bb-13b4.ngrok-free.app/predict"; // Replace with your API endpoint
 
           try {
-            // Create multipart request
             var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
             request.files.add(await http.MultipartFile.fromPath(
               'file', // The field name expected by the server
               file.path,
             ));
 
-            // Send the request
             var response = await request.send();
 
-            // Handle the server response
+            String responseBody = await response.stream.bytesToString();
+            print('Response Body: $responseBody');
+
+            Provider.of<ResponseDataModel>(context, listen: false)
+                .setResponseData(responseBody);
+
             if (response.statusCode == 200) {
-              // Convert the response stream to a String
-              String responseBody = await response.stream.bytesToString();
-
-              // Display the response in a snackbar or dialog
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Response: $responseBody")),
+              var jsonResponse = json.decode(responseBody);
+              // Navigate to the ResultPage and pass the response
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ResultPage(responseData: responseBody),
+                ),
               );
-
-              // You can also parse the response if it is in JSON format
-              // Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
-              // Process jsonResponse as needed
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("Failed to upload file. Status: ${response.statusCode}")),
@@ -431,12 +428,12 @@ Widget _buildUpload(BuildContext context) {
             );
           }
         } else {
-          // User canceled file selection
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("No file selected")),
           );
         }
       },
+
       style: ElevatedButton.styleFrom(
         padding: EdgeInsets.zero,
         minimumSize: Size(40, 80),
@@ -447,7 +444,7 @@ Widget _buildUpload(BuildContext context) {
       child: Ink(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.blueGrey, Colors.grey],
+            colors: [Colors.green, Colors.lightGreenAccent],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -457,62 +454,12 @@ Widget _buildUpload(BuildContext context) {
           constraints: BoxConstraints(maxWidth: double.infinity, minHeight: 80),
           alignment: Alignment.center,
           child: Text(
-            'Upload Excel',
+            'Upload & Predict',
             style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       ),
     ),
-  );
-}
-
-
-  Widget _buildRetoctButton(BuildContext context) {
-    return Padding(
-        padding: EdgeInsets.all(20),
-        child: ElevatedButton(
-      onPressed: () {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => ResultPage(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              // Use FadeTransition for fade effect
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: Duration(milliseconds: 300), // Duration of the fade
-          ),
-        );
-      },
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.zero,
-        minimumSize: Size(40, 80),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(50),
-        ),
-      ),
-      child: Ink(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green, Colors.lightGreen],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          borderRadius: BorderRadius.circular(50),
-        ),
-        child: Container(
-          constraints: BoxConstraints(maxWidth: double.infinity, minHeight: 80),
-          alignment: Alignment.center,
-          child: Text(
-            'Predict',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-    )
   );
 }
 
